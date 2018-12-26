@@ -20,6 +20,9 @@
         random: Math.random().toFixed(4)
       }
     },
+    created() {
+        console.log('list created')
+    },
     activated() {
       console.log('list activated')
     },

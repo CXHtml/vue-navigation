@@ -4,10 +4,13 @@
       <p>This is the <b>index</b> page</p>
       <p>random number: {{random}}</p>
       <p>
-        <router-link to="/">go to index page</router-link>
+        <router-link to="/">go to index page1</router-link>
       </p>
       <p>
         <router-link to="list">go to list page</router-link>
+      </p>
+      <p>
+        <router-link to="foo">go to foo page</router-link>
       </p>
     </div>
   </page>
@@ -22,6 +25,9 @@
       return {
         random: Math.random().toFixed(4)
       }
+    },
+    created() {
+        console.log('index created')
     },
     activated() {
       console.log('index activated')

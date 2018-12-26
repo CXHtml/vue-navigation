@@ -8,6 +8,7 @@
       <a href="javascript:void(0)" @click="goToNextDetail">go to next detail</a>
       <br>
       <a href="javascript:void(0)" @click="goToIndex">go to index</a>
+      <a href="javascript:void(0)" @click="replaceToList">go to list</a>
     </div>
   </page>
 </template>
@@ -22,6 +23,9 @@
         id: Number(this.$route.params.id),
         random: Math.random().toFixed(4)
       }
+    },
+    created() {
+        console.log('detail created')
     },
     activated() {
       console.log('detail activated')
@@ -42,7 +46,10 @@
       goToIndex() {
         // jump to index
         this.$router.push('/')
-      }
+      },
+      replaceToList() {
+          this.$router.push('/list');
+      },
     }
   }
 </script>

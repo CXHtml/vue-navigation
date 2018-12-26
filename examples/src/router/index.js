@@ -6,6 +6,7 @@ import Router from 'vue-router'
 const Index = r => require.ensure([], () => r(require('../pages/Index.vue')), 'Index')
 const List = r => require.ensure([], () => r(require('../pages/List.vue')), 'List')
 const Detail = r => require.ensure([], () => r(require('../pages/Detail.vue')), 'Detail')
+const Foo = r => require.ensure([], () => r(require('../pages/Foo.vue')), 'Foo')
 
 Vue.use(Router)
 
@@ -27,6 +28,11 @@ const router = new Router({
       path: '/list/:id',
       component: Detail
     },
+    {
+        name: 'foo',
+        path: '/foo',
+        component: Foo,
+    }
   ]
 })
 

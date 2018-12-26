@@ -18,15 +18,6 @@ if (window.sessionStorage.VUE_NAVIGATION) {
 
 var Routes = routes;
 
-function genKey() {
-  var t = 'xxxxxxxx';
-  return t.replace(/[xy]/g, function (c) {
-    var r = Math.random() * 16 | 0;
-    var v = c === 'x' ? r : r & 0x3 | 0x8;
-    return v.toString(16);
-  });
-}
-
 function getKey(route, keyName) {
   return (route.name || route.path) + '?' + route.query[keyName];
 }
@@ -40,46 +31,6 @@ function matches(pattern, name) {
     return pattern.test(name);
   }
   return false;
-}
-
-function isObjEqual(obj1, obj2) {
-  if (obj1 === obj2) {
-    return true;
-  } else {
-    var keys1 = Object.getOwnPropertyNames(obj1);
-    var keys2 = Object.getOwnPropertyNames(obj2);
-    if (keys1.length !== keys2.length) {
-      return false;
-    }
-    var _iteratorNormalCompletion = true;
-    var _didIteratorError = false;
-    var _iteratorError = undefined;
-
-    try {
-      for (var _iterator = keys1[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-        var key = _step.value;
-
-        if (obj1[key] !== obj2[key]) {
-          return false;
-        }
-      }
-    } catch (err) {
-      _didIteratorError = true;
-      _iteratorError = err;
-    } finally {
-      try {
-        if (!_iteratorNormalCompletion && _iterator.return) {
-          _iterator.return();
-        }
-      } finally {
-        if (_didIteratorError) {
-          throw _iteratorError;
-        }
-      }
-    }
-
-    return true;
-  }
 }
 
 var Navigator = (function (bus, store, moduleName, keyName) {
@@ -245,10 +196,6 @@ var NavComponent = (function (keyName) {
   };
 });
 
-var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
-
-function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
-
 var index = {
   install: function install(Vue) {
     var _ref = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {},
@@ -268,30 +215,29 @@ var index = {
     var navigator = Navigator(bus, store, moduleName, keyName);
 
     var routerReplace = router.replace.bind(router);
+    var routerPush = router.push.bind(router);
     var replaceFlag = false;
+    var pushFlag = false;
     router.replace = function (location, onComplete, onAbort) {
       replaceFlag = true;
       routerReplace(location, onComplete, onAbort);
     };
 
-    router.beforeEach(function (to, from, next) {
-      if (!to.query[keyName]) {
-        var query = _extends({}, to.query);
+    router.push = function (location, onComplete, onAbort) {
+      pushFlag = true;
+      routerPush(location, onComplete, onAbort);
+    };
 
-        if (to.path === from.path && isObjEqual(_extends({}, to.query, _defineProperty({}, keyName, null)), _extends({}, from.query, _defineProperty({}, keyName, null))) && from.query[keyName]) {
-          query[keyName] = from.query[keyName];
-        } else {
-          query[keyName] = genKey();
-        }
-        next({ name: to.name, params: to.params, query: query, replace: replaceFlag || !from.query[keyName] });
-      } else {
-        next();
-      }
-    });
+    var prevHistoryLength = window.history.length;
 
     router.afterEach(function (to, from) {
-      navigator.record(to, from, replaceFlag);
+      var forward = window.history.length > prevHistoryLength;
+      setTimeout(function () {
+        prevHistoryLength = window.history.length;
+      });
+      navigator.record(to, from, replaceFlag, pushFlag || forward);
       replaceFlag = false;
+      pushFlag = false;
     });
 
     Vue.component('navigation', NavComponent(keyName));
