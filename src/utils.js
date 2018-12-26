@@ -8,8 +8,8 @@ export function genKey() {
   })
 }
 
-export function getKey(route, keyName) {
-  return `${route.name || route.path}?${route.query[keyName]}`
+export function getKey(path, key) {
+  return `${path}__navigation_routers_index` + (key ? `__${key}` : '')
 }
 
 export function matches(pattern, name) {

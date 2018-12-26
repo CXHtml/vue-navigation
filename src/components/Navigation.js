@@ -1,4 +1,4 @@
-import Routes from '../routes'
+import Routes, { getRoutesMap } from '../routes'
 import { getKey, matches } from '../utils'
 
 export default (keyName) => {
@@ -7,19 +7,20 @@ export default (keyName) => {
     abstract: true,
     props: {},
     data: () => ({
-      routes: Routes
+        routes: Routes,
     }),
     computed: {},
     watch: {
       routes(val) {
-        for (const key in this.cache) {
-          if (!matches(val, key)) {
-            const vnode = this.cache[key]
-            vnode && vnode.componentInstance.$destroy()
-            delete this.cache[key]
-          }
-        }
-      },
+            const keys = val.map(({ path, key }) => `${path}__navigation_routers_index__${key}`);
+            for (const key in this.cache) {
+                if (!matches(keys, key)) {
+                    const vnode = this.cache[key]
+                    vnode && vnode.componentInstance.$destroy()
+                    delete this.cache[key]
+                }
+            }
+        },
     },
     created() {
       this.cache = {}
@@ -37,22 +38,23 @@ export default (keyName) => {
           ? 'comment'
           : vnode.tag)
         // prevent vue-router reuse component
-        const key = getKey(this.$route, keyName)
+        const routesMap = getRoutesMap()
+        const key = getKey(this.$route.path, routesMap[this.$route.path])
         if (vnode.key.indexOf(key) === -1) {
           vnode.key = `__navigation-${key}-${vnode.key}`
         }
         if (this.cache[key]) {
-          if (vnode.key === this.cache[key].key) {
-            // restore vnode from cache
-            vnode.componentInstance = this.cache[key].componentInstance
-          } else {
-            // replace vnode to cache
-            this.cache[key].componentInstance.$destroy()
-            this.cache[key] = vnode
-          }
+            if (vnode.key === this.cache[key].key) {
+                // restore vnode from cache
+                vnode.componentInstance = this.cache[key].componentInstance
+            } else {
+                // replace vnode to cache
+                this.cache[key].componentInstance.$destroy()
+                this.cache[key] = vnode
+            }
         } else {
-          // cache new vnode
-          this.cache[key] = vnode
+            // cache new vnode
+            this.cache[key] = vnode
         }
         vnode.data.keepAlive = true
       }

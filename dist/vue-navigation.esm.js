@@ -7,13 +7,29 @@
 var routes = [];
 
 if (window.sessionStorage.VUE_NAVIGATION) {
-  routes = JSON.parse(window.sessionStorage.VUE_NAVIGATION);
+    routes = JSON.parse(window.sessionStorage.VUE_NAVIGATION);
 }
+
+var getRoutesMap = function getRoutesMap() {
+    return routes.reduce(function (result, route) {
+        result[route.path] = route.key;
+        return result;
+    }, {});
+};
 
 var Routes = routes;
 
-function getKey(route, keyName) {
-  return (route.name || route.path) + '?' + route.query[keyName];
+function genKey() {
+  var t = 'xxxxxxxx';
+  return t.replace(/[xy]/g, function (c) {
+    var r = Math.random() * 16 | 0;
+    var v = c === 'x' ? r : r & 0x3 | 0x8;
+    return v.toString(16);
+  });
+}
+
+function getKey(path, key) {
+  return path + '__navigation_routers_index' + (key ? '__' + key : '');
 }
 
 function matches(pattern, name) {
@@ -27,6 +43,17 @@ function matches(pattern, name) {
   return false;
 }
 
+var mergePush = Routes.push.bind(Routes);
+Routes.push = function (item) {
+  var path = item.path,
+      key = item.key;
+
+  Routes.forEach(function (route) {
+    return route.path === path && (route.key = key);
+  });
+  mergePush(item);
+};
+
 var Navigator = (function (bus, store, moduleName, keyName) {
   if (store) {
     store.registerModule(moduleName, {
@@ -39,7 +66,7 @@ var Navigator = (function (bus, store, moduleName, keyName) {
               from = _ref.from,
               name = _ref.name;
 
-          state.routes.push(name);
+          state.routes.push({ path: name, key: genKey() });
         },
         'navigation/BACK': function navigationBACK(state, _ref2) {
           var to = _ref2.to,
@@ -53,7 +80,7 @@ var Navigator = (function (bus, store, moduleName, keyName) {
               from = _ref3.from,
               name = _ref3.name;
 
-          state.routes.splice(Routes.length - 1, 1, name);
+          state.routes.splice(Routes.length - 1, 1, { path: name, key: genKey() });
         },
         'navigation/REFRESH': function navigationREFRESH(state, _ref4) {
           var to = _ref4.to,
@@ -66,14 +93,14 @@ var Navigator = (function (bus, store, moduleName, keyName) {
     });
   }
 
-  var forward = function forward(name, toRoute, fromRoute) {
+  var forward = function forward(name, toRoute, fromRoute, pushFlag) {
     var to = { route: toRoute };
     var from = { route: fromRoute };
     var routes = store ? store.state[moduleName].routes : Routes;
 
-    from.name = routes[routes.length - 1] || null;
+    from.name = (routes[routes.length - 1] || {}).path || null;
     to.name = name;
-    store ? store.commit('navigation/FORWARD', { to: to, from: from, name: name }) : routes.push(name);
+    store ? store.commit('navigation/FORWARD', { to: to, from: from, name: name }) : routes.push({ path: name, key: genKey() });
     window.sessionStorage.VUE_NAVIGATION = JSON.stringify(routes);
     bus.$emit('forward', to, from);
   };
@@ -81,8 +108,8 @@ var Navigator = (function (bus, store, moduleName, keyName) {
     var to = { route: toRoute };
     var from = { route: fromRoute };
     var routes = store ? store.state[moduleName].routes : Routes;
-    from.name = routes[routes.length - 1];
-    to.name = routes[routes.length - 1 - count];
+    from.name = routes[routes.length - 1].path;
+    to.name = routes[routes.length - 1 - count].path;
     store ? store.commit('navigation/BACK', { to: to, from: from, count: count }) : routes.splice(Routes.length - count, count);
     window.sessionStorage.VUE_NAVIGATION = JSON.stringify(routes);
     bus.$emit('back', to, from);
@@ -92,9 +119,9 @@ var Navigator = (function (bus, store, moduleName, keyName) {
     var from = { route: fromRoute };
     var routes = store ? store.state[moduleName].routes : Routes;
 
-    from.name = routes[routes.length - 1] || null;
+    from.name = routes[routes.length - 1].path || null;
     to.name = name;
-    store ? store.commit('navigation/REPLACE', { to: to, from: from, name: name }) : routes.splice(Routes.length - 1, 1, name);
+    store ? store.commit('navigation/REPLACE', { to: to, from: from, name: name }) : routes.splice(Routes.length - 1, 1, { path: name, key: genKey() });
     window.sessionStorage.VUE_NAVIGATION = JSON.stringify(routes);
     bus.$emit('replace', to, from);
   };
@@ -102,7 +129,7 @@ var Navigator = (function (bus, store, moduleName, keyName) {
     var to = { route: toRoute };
     var from = { route: fromRoute };
     var routes = store ? store.state[moduleName].routes : Routes;
-    to.name = from.name = routes[routes.length - 1];
+    to.name = from.name = routes[routes.length - 1].path;
     store ? store.commit('navigation/REFRESH', { to: to, from: from }) : null;
     bus.$emit('refresh', to, from);
   };
@@ -112,18 +139,17 @@ var Navigator = (function (bus, store, moduleName, keyName) {
     bus.$emit('reset');
   };
 
-  var record = function record(toRoute, fromRoute, replaceFlag) {
-    var name = getKey(toRoute, keyName);
+  var record = function record(toRoute, fromRoute, replaceFlag, pushFlag) {
+    var name = toRoute.path;
     if (replaceFlag) {
       replace(name, toRoute, fromRoute);
     } else {
-      var toIndex = Routes.lastIndexOf(name);
-      if (toIndex === -1) {
+      if (!getRoutesMap()[name] || pushFlag) {
         forward(name, toRoute, fromRoute);
-      } else if (toIndex === Routes.length - 1) {
+      } else if (name === Routes[Routes.length - 1].path) {
         refresh(toRoute, fromRoute);
       } else {
-        back(Routes.length - 1 - toIndex, toRoute, fromRoute);
+        back(1, toRoute, fromRoute);
       }
     }
   };
@@ -146,8 +172,13 @@ var NavComponent = (function (keyName) {
     computed: {},
     watch: {
       routes: function routes(val) {
+        var keys = val.map(function (_ref) {
+          var path = _ref.path,
+              key = _ref.key;
+          return path + '__navigation_routers_index__' + key;
+        });
         for (var key in this.cache) {
-          if (!matches(val, key)) {
+          if (!matches(keys, key)) {
             var vnode = this.cache[key];
             vnode && vnode.componentInstance.$destroy();
             delete this.cache[key];
@@ -169,7 +200,8 @@ var NavComponent = (function (keyName) {
       if (vnode) {
         vnode.key = vnode.key || (vnode.isComment ? 'comment' : vnode.tag);
 
-        var key = getKey(this.$route, keyName);
+        var routesMap = getRoutesMap();
+        var key = getKey(this.$route.path, routesMap[this.$route.path]);
         if (vnode.key.indexOf(key) === -1) {
           vnode.key = '__navigation-' + key + '-' + vnode.key;
         }
