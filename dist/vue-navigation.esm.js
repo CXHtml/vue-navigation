@@ -44,6 +44,7 @@ function matches(pattern, name) {
 }
 
 var mergePush = Routes.push.bind(Routes);
+
 Routes.push = function (item) {
     var path = item.path,
         key = item.key;
@@ -254,13 +255,8 @@ var index = {
             routerPush(location, onComplete, onAbort);
         };
 
-        var prevHistoryLength = window.history.length;
-
         router.afterEach(function (to, from) {
-            var forward = window.history.length > prevHistoryLength;
-            setTimeout(function () {
-                prevHistoryLength = window.history.length;
-            });
+            var forward = (Routes[Routes.length - 2] || {}).path !== to.path;
             navigator.record(to, from, replaceFlag, pushFlag || forward);
             replaceFlag = false;
             pushFlag = false;
