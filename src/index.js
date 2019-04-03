@@ -27,34 +27,10 @@ export default {
             pushFlag = true
             routerPush(location, onComplete, onAbort)
         }
-
-        // init router`s keyName
-        let prevHistoryLength = window.history.length;
-        // router.beforeEach((to, from, next) => {
-        //   if (!to.query[keyName]) {
-        //     const query = { ...to.query }
-        //     // go to the same route will be set the same key
-        //     if (to.path === from.path && isObjEqual(
-        //       { ...to.query, [keyName]: null },
-        //       { ...from.query, [keyName]: null },
-        //     ) && from.query[keyName]) {
-        //       query[keyName] = from.query[keyName]
-        //     } else {
-        //       query[keyName] = genKey()
-        //     }
-        //     next({ path: to.path, query, replace: replaceFlag || !from.query[keyName] })
-        //   } else {
-        //     next()
-        //   }
-        //     next();
-        // })
-
         // record router change
         router.afterEach((to, from) => {
-            const forward = window.history.length > prevHistoryLength;
-            setTimeout(() => {
-                prevHistoryLength = window.history.length
-            });
+            // 该 forward 用于区分『手动触发 router push』与『点击浏览器前进』，对比新推入的路由路径与本地记录的倒数第二个路径是否相等，若不相等则视为触发浏览器的前进操作
+            const forward = (Routes[Routes.length - 2] || {}).path !== to.path;
             navigator.record(to, from, replaceFlag, pushFlag || forward)
             replaceFlag = false
             pushFlag = false
