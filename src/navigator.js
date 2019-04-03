@@ -2,6 +2,7 @@ import Routes, { getRoutesMap } from './routes'
 import { genKey } from './utils'
 
 const mergePush = Routes.push.bind(Routes);
+// hack 原 push 行为，其行为变更为：若新 push 进来的路由在本地存储的路由列表内存在过，则更新该路由的 key 为最新 push 进来的 key 值
 Routes.push = (item) => {
     const { path, key } = item;
     Routes.forEach((route) => route.path === path && (route.key = key));
