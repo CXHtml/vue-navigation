@@ -1,103 +1,43 @@
-# vue-navigation
+# @vusion/vusion-navigation
 
-[![npm](https://img.shields.io/npm/dm/vue-navigation.svg)](https://www.npmjs.com/package/vue-navigation)
-[![npm](https://img.shields.io/npm/v/vue-navigation.svg)](https://www.npmjs.com/package/vue-navigation)<!-- [![npm (tag)](https://img.shields.io/npm/v/vue-navigation/next.svg)](https://www.npmjs.com/package/vue-navigation) -->
-[![npm](https://img.shields.io/npm/l/vue-navigation.svg)](https://www.npmjs.com/package/vue-navigation)
-[![Github file size](https://img.shields.io/github/size/zack24q/vue-navigation/dist/vue-navigation.esm.min.js.svg)](https://github.com/zack24q/vue-navigation/blob/master/dist/vue-navigation.esm.min.js)
+> require [vue](https://github.com/vuejs/vue) `2.x` and [vue-router](https://github.com/vuejs/vue-router) `2.x`。
 
-> require [vue](https://github.com/vuejs/vue) `2.x` and [vue-router](https://github.com/vuejs/vue-router) `2.x`.
+## What is it
 
-[中文文档](https://github.com/zack24q/vue-navigation/blob/master/README_CN.md)
+A library that can cache the pages state when using vue-router, no matter how you trigger the forward/back behavior by invoking router.push/router.go, window.history.back or the forward/back button of native browser.
 
-vue-navigation default behavior is similar to native mobile app (A、B、C are pages):
+For instance：
+A、B、C are pages
 
-1. A forward to B, then forward to C;
-2. C back to B, B will **recover from cache**;
-3. B forward to C again, C will **rebuild, not recover from cache**;
-4. C forward to A, A will **build, now the route contains two A instance**.
+1. A -> B -> C，A forward to B, then forward to C
+2. C -> B，C back to B，then B will restore its state from cache
+3. B -> C，then B forward to C，if you forward page by pressing the native browser button, C will restore from cache, otherwise, rebuild C 
+4. A -> B -> C -> A，now there're two A instance in the history list, the older one's state will be replaced by the newer one
 
-**!important: vue-navigation adds a key to the url to distinguish the route. The default name of the key is VNK, which can be modified.**
+## Why need this
 
-### DEMO
+1. Sometimes states of pages need to be cached and then restore them at specific time, like back to the previous page which may has a form you've filled previously.
+2. The default behavior of vue-router is to create new instance of the router view when navigate to page, however this is not consistent with the behavior of **triggering the forward/back button of native browser**. Under such circumstance, data, state, scroll bar position will be retained.
 
-[DEMO](https://zack24q.github.io/vue-navigation/examples/)
-
-[CODE](https://github.com/zack24q/vue-navigation/tree/master/examples)
-
-## Installing
+## Install
 
 ```bash
-npm i -S vue-navigation
+npm i -S @vusion/vusion-navigation
 ```
 
 or
 
 ```bash
-yarn add vue-navigation
+yarn add @vusion/vusion-navigation
 ```
 
 ## Usage
+### Event
+Functions: [ `on` | `once` | `off` ]
 
-### Basic Usage
+Event types: [ `forward` | `back` | `replace` | `refresh` | `reset` ]
 
-main.js
-
-```javascript
-import Vue from 'vue'
-import router from './router' // vue-router instance
-import Navigation from 'vue-navigation'
-
-Vue.use(Navigation, {router})
-// bootstrap your app...
-```
-App.vue
-
-```vue
-<template>
-  <navigation>
-    <router-view></router-view>
-  </navigation>
-</template>
-```
-
-### Use with vuex2
-
-main.js
-
-```javascript
-import Vue from 'vue'
-import router from './router' // vue-router instance
-import store from './store' // vuex store instance
-import Navigation from 'vue-navigation'
-
-Vue.use(Navigation, {router, store})
-// bootstrap your app...
-```
-
-After passing in `store`, `vue-navigation` will register a module in `store` (default module name is `navigation`), and commit `navigation/FORWARD` or `navigation/BACK` or `navigation/REFRESH` when the page jumps.
-
-## Options
-
-Only `router` is required.
-
-```javascript
-Vue.use(Navigation, {router, store, moduleName: 'navigation', keyName: 'VNK'})
-```
-
-## Events
-functions: [ `on` | `once` | `off` ]
-
-event types: [ `forward` | `back` | `replace` | `refresh` | `reset` ]
-
-parameter( `to` | `from` ) properties:
-- `name`
-  - type: string
-  - desc: name of the route(contains the key)
-- `route`
-  - type: object
-  - desc: vue-route`s route object
-
-```javascript
+```js
 this.$navigation.on('forward', (to, from) => {})
 this.$navigation.once('back', (to, from) => {})
 this.$navigation.on('replace', (to, from) => {})

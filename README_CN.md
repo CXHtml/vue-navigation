@@ -1,102 +1,48 @@
-# vue-navigation
-
-[![npm](https://img.shields.io/npm/dm/vue-navigation.svg)](https://www.npmjs.com/package/vue-navigation)
-[![npm](https://img.shields.io/npm/v/vue-navigation.svg)](https://www.npmjs.com/package/vue-navigation)<!-- [![npm (tag)](https://img.shields.io/npm/v/vue-navigation/next.svg)](https://www.npmjs.com/package/vue-navigation) -->
-[![npm](https://img.shields.io/npm/l/vue-navigation.svg)](https://www.npmjs.com/package/vue-navigation)
-[![Github file size](https://img.shields.io/github/size/zack24q/vue-navigation/dist/vue-navigation.esm.min.js.svg)](https://github.com/zack24q/vue-navigation/blob/master/dist/vue-navigation.esm.min.js)
+# @vusion/vusion-navigation
 
 > 需要 [vue](https://github.com/vuejs/vue) `2.x` 与 [vue-router](https://github.com/vuejs/vue-router) `2.x`。
 
+## 这是一个什么库
 
-导航默认行为类似手机APP的页面导航（A、B、C为页面）：
+一个让 vue-router 具备在导航时（无论是触发 router.push/router.go、window.history.back 还是浏览器前进后退按钮）可以缓存页面状态的库。
 
-1. A前进到B，再前进到C；
-2. C返回到B时，B会**从缓存中恢复**；
-3. B再次前进到C，C会**重新生成，不会从缓存中恢复**；
-4. C前进到A，A会**生成，现在路由中包含2个A实例**。
+举例：
+A、B、C为页面
 
-**！重要：vue-navigation在url中添加了一个key来区分路由。key的名称默认为VNK，可以修改。**
+1. A -> B -> C，A 进到 B 再进入 C 页面
+2. C -> B，从 C 返回到 B，B 页面会从缓存中恢复
+3. B -> C，再从 B 进到 C 页面，如果该操作是点击浏览器前进按钮，则 C 页面会从缓存中恢复，否则 C 页面将重新生成
+4. A -> B -> C -> A，此时历史记录里有两个 A 页面，则之前的 A 页面内的状态会被更新为最新进来的 A 页面状态
 
-### 在线演示
+## 为何需要它
 
-[演示地址](https://zack24q.github.io/vue-navigation/examples/)
+1. 有时页面内的状态需要被缓存起来，然后在适当的时候（例如返回上一级页面）从缓存中还原，例如我们返回的上一级页面正好是一个表单，那理所当然的返回时希望保留原来表单内填写的内容。
+2. Vue-router 控制页面的跳转时，默认都会重新渲染页面实例，这在**点击浏览器前进后退按钮**时与浏览器渲染页面的策略不太一致（在这种情况下，页面内的数据、状态、页面滚动位置等会被保留）
 
-[代码地址](https://github.com/zack24q/vue-navigation/tree/master/examples)
+## 原理
+
+1. 参照 vue 可以对组件实施 keep alive 的策略，同样适用于 router-view 内渲染的 vue 实例，只需设置 ```vnode.data.keepAlive = true```
+2. 本地维护一份与 browser history 保持一致的路由记录，目的是为了基于这份记录来判断哪些页面需要从缓存中恢复
 
 ## 安装
 
 ```bash
-npm i -S vue-navigation
+npm i -S @vusion/vusion-navigation
 ```
 
 或
 
 ```bash
-yarn add vue-navigation
+yarn add @vusion/vusion-navigation
 ```
 
 ## 使用
-
-### 基础使用
-
-main.js
-
-```javascript
-import Vue from 'vue'
-import router from './router' // vue-router 实例
-import Navigation from 'vue-navigation'
-
-Vue.use(Navigation, {router})
-// 启动你的应用...
-```
-App.vue
-
-```vue
-<template>
-  <navigation>
-    <router-view></router-view>
-  </navigation>
-</template>
-```
-
-### 搭配vuex2使用
-
-main.js
-
-```javascript
-import Vue from 'vue'
-import router from './router' // vue-router 实例
-import store from './store' // vuex store 实例
-import Navigation from 'vue-navigation'
-
-Vue.use(Navigation, {router, store})
-// 启动你的应用...
-```
-
-传入 `store` 后，`vue-navigation` 会向 `store` 注册一个Module（Module的默认名称为 `navigation`），同时在页面跳转时会提交 `navigation/FORWARD` 或 `navigation/BACK` 或 `navigation/REFRESH`。
-
-## Options
-
-只有`route`是必须的.
-
-```javascript
-Vue.use(Navigation, {router, store, moduleName: 'navigation', keyName: 'VNK'})
-```
-
 ### 事件
 方法: [ `on` | `once` | `off` ]
 
 事件类型: [ `forward` | `back` | `replace` | `refresh` | `reset` ]
 
-参数( `to` | `from` ) 的属性:
-- `name`
-  - 类型: string
-  - 描述: 路由的名称（包含key）
-- `route`
-  - 类型: object
-  - 描述: vue-route的路由信息对象
-
-```javascript
+```js
 this.$navigation.on('forward', (to, from) => {})
 this.$navigation.once('back', (to, from) => {})
 this.$navigation.on('replace', (to, from) => {})
