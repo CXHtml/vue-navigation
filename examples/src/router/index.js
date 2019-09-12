@@ -1,5 +1,5 @@
 import Vue from 'vue'
-import Router from 'vue-router'
+import Router from 'vue-router/dist/vue-router.common'
 // import Index from '../pages/Index.vue'
 // import List from '../pages/List.vue'
 // import Detail from '../pages/Detail.vue'

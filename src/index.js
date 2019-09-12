@@ -9,7 +9,15 @@ export default {
       console.error('vue-navigation need options: router')
       return
     }
-
+    console.log(router.mode)
+    window.addEventListener('popstate', e => {
+      console.log('--------popstate-------')
+      console.log(e)
+    })
+    window.addEventListener('hashchange', e => {
+      console.log('--------hashchange-------')
+      console.log(e)
+    })
     const bus = new Vue()
     const navigator = Navigator(bus, store, moduleName, keyName)
 
@@ -23,6 +31,7 @@ export default {
 
     // init router`s keyName
     router.beforeEach((to, from, next) => {
+      console.log('beforeChange')
       if (!to.query[keyName]) {
         const query = { ...to.query }
         // go to the same route will be set the same key
